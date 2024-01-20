@@ -15,8 +15,8 @@ import javax.validation.constraints.Positive;
 @ToString
 public class TransactionCreateRequest {
 
-    @Positive
-    private Integer studentId;
+//    @Positive
+//    private Integer studentId;
 
     @Positive
     private Integer bookId;
@@ -24,9 +24,4 @@ public class TransactionCreateRequest {
     @NotNull
     private TransactionType transactionType;
 
-//    public Transaction to(){
-//        return Transaction.builder()
-//                .s
-//                .build();
-//    }
 }

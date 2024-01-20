@@ -1,6 +1,7 @@
 package com.example.minorproject.dto;
 
 import com.example.minorproject.models.Student;
+import com.example.minorproject.models.User;
 import lombok.*;
 
 import javax.validation.constraints.Email;
@@ -28,6 +29,12 @@ public class StudentCreateRequest {
     private String rollNo;
     private String mobile;
 
+    @NotBlank
+    private String username;
+
+    @NotBlank
+    private String password; // raw form
+
 
     public Student to(){
         return Student.builder()
@@ -37,6 +44,12 @@ public class StudentCreateRequest {
                 .mobile(this.mobile)
                 .email(this.email)
                 .cardId(UUID.randomUUID().toString())
+                .user(
+                        User.builder()
+                                .username(this.username)
+                                .password(this.password)
+                                .build()
+                )
                 .build();
     }
 }

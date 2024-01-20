@@ -1,5 +1,6 @@
 package com.example.minorproject.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -30,6 +31,7 @@ public class Author {
     private Date createdOn;
 
     @OneToMany(mappedBy = "author") // Mapped by will contain the attribute name corresponding to author object in the book class
+    @JsonIgnoreProperties("author")
     private List<Book> bookList; // Author : Book {1: M}
 
 }

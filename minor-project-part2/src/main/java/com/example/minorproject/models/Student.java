@@ -1,5 +1,7 @@
 package com.example.minorproject.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -41,10 +43,17 @@ public class Student {
     private String cardId;
 
     @OneToMany(mappedBy = "student") // [this doesn't mean that I am storing bookList in student table. This is for reference in Java object]
+    @JsonIgnoreProperties({"student", "transactionList"}) // this is not going to affect any db query or response, this is just to tell the jackson databind mappers to ignore some fields from the response
     private List<Book> bookList; // {Student --> Book}
 
     @OneToMany(mappedBy = "student")
+    @JsonIgnoreProperties({"student", "book"})
     private List<Transaction> transactionList; // {Student : Txn}
+
+    @JoinColumn
+    @OneToOne
+    @JsonIgnoreProperties({"student", "admin"})
+    private User user;
 
     // select * from book where student_id = ?
 }

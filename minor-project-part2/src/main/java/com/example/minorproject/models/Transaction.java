@@ -1,5 +1,6 @@
 package com.example.minorproject.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -23,10 +24,12 @@ public class Transaction {
 
     @JoinColumn
     @ManyToOne
+    @JsonIgnoreProperties({"transactionList", "bookList"})
     private Student student; // {Txn --> Student}
 
     @JoinColumn
     @ManyToOne
+    @JsonIgnoreProperties({"transactionList", "student"})
     private Book book; // {Txn --> Book}
 
     private Double fine;

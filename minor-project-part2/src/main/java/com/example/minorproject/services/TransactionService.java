@@ -7,7 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class TransactionService {
@@ -24,11 +26,13 @@ public class TransactionService {
     @Value("${books.max-allowed}")
     Integer MAX_ALLOWED_BOOKS;
 
+    @Value("${books.issuance.due-date}")
+    Integer ISSUED_ALLOWED_DAYS;
+
 //    private static final Integer MAX_ALLOWED_BOOK = 3;
 
-    public String transact(TransactionCreateRequest transactionCreateRequest) throws Exception { // return a UUID as an external txn id
+    public String transact(Integer studentId, TransactionCreateRequest transactionCreateRequest) throws Exception { // return a UUID as an external txn id
 
-        Integer studentId = transactionCreateRequest.getStudentId();
         Integer bookId = transactionCreateRequest.getBookId();
 
         TransactionType transactionType = transactionCreateRequest.getTransactionType();
@@ -89,7 +93,7 @@ public class TransactionService {
         return transaction.getExternalTxnId();
     }
 
-    private String returnBook(Integer studentId, Integer bookId){
+    private String returnBook(Integer studentId, Integer bookId) throws Exception {
 
         /**
          * /**
@@ -100,11 +104,68 @@ public class TransactionService {
          *          * 5. update txn status to success or if anything fails just make the txn status as FAILED
          *
          */
+        Transaction transaction = Transaction.builder()
+                .externalTxnId(UUID.randomUUID().toString())
+                .transactionType(TransactionType.RETURN)
+                .transactionStatus(TransactionStatus.PENDING)
+                .book(Book.builder().id(bookId).build())
+                .student(Student.builder().id(studentId).build())
+                .build();
 
-        /*
-            Postman
-            Dbeaver / Mysql workbench
-         */
-        return null;
+        this.transactionRepository.save(transaction);
+
+        try{
+            Book book = this.bookService.find(bookId);
+            Student student = this.studentService.get(studentId);
+            if(book.getStudent() == null || book.getStudent().getId() != studentId){
+                throw new Exception("Book is not issued to this student");
+            }
+
+            Transaction issuedTxn = this.transactionRepository.findTopByStudentAndBookAndTransactionTypeAndTransactionStatusOrderByIdDesc(
+                    student, book, TransactionType.ISSUE, TransactionStatus.SUCCESS
+            );
+
+            if(issuedTxn == null){
+                throw new Exception("Corresponding issue transaction not found");
+            }
+
+
+            Date issuanceDate = issuedTxn.getCreatedOn();
+            Date returnDate = transaction.getCreatedOn();
+
+            Double fine = this.getFine(issuanceDate, returnDate);
+
+
+            this.bookService.updateBookAvailability(bookId, null);
+
+            transaction.setFine(fine);
+            transaction.setTransactionStatus(TransactionStatus.SUCCESS);
+            this.transactionRepository.save(transaction);
+
+        }catch (Exception e){
+            transaction.setTransactionStatus(TransactionStatus.FAILED);
+            this.transactionRepository.save(transaction);
+        }
+
+        return transaction.getExternalTxnId();
+    }
+
+    private Double getFine(Date issuanceDate, Date returnDate){
+
+        long timeDiffInMillis = (returnDate.getTime() - issuanceDate.getTime());
+
+        long daysPassed = TimeUnit.DAYS.convert(timeDiffInMillis, TimeUnit.MILLISECONDS);
+
+        Double fine = 0.0;
+
+        if(daysPassed > ISSUED_ALLOWED_DAYS){
+            fine = (daysPassed - ISSUED_ALLOWED_DAYS) * 1.0;
+        }
+
+        return fine;
+    }
+
+    public Transaction getTxnById(String externalTxnId){
+        return this.transactionRepository.findByExternalTxnId(externalTxnId);
     }
 }
