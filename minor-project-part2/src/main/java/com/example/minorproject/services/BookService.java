@@ -22,6 +22,8 @@ public class BookService {
         Book book = bookCreateRequest.to();
         Author author = book.getAuthor();
 
+
+
         author = this.authorService.createOrGet(author);
 //        book.setAuthor(author); // for latest spring boot versions, you can emit
 
